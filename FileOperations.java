@@ -4,25 +4,35 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class FileOperations {
 
-	public static String EXTENSION = ".zc_lic";
-	public static String FILE_PATH = "/home/hari/files/JSONfile.json";
-	public static String REPLACE_VALUE = "$no$";
+	public static final String EXTENSION = ".ZC_LIC";
+	public static final String FILE_PATH = "/home/hari/files/JSONfile.json";
+	public static final String REPLACED_VALUE = "$no$";
 
-	public static void main(String[] args) throws IOException {
-//       System.out.println(createFile("/home/hari/files/JSONfile.json"));
-//		System.out.println(readingFileData("/home/hari/files/JSONfile.json"));
-		System.out.println(generateLisence("hari", 36, 45,""));
+	public static void main(String[] args) throws IOException, ClassNotFoundException {
+//		System.out.println(getValueByKey("/home/hari/files/FirstJSONFile.json", "second"));
+//		System.out.println(createFile("/home/hari/files/FirstJSONFile.json"));
+//		System.out.println(generateLisence("Hari",1, 10,"/home/hari/files/"));
+//		System.out.println(getValueOfNestedJson("{\"first\":{\"second\":{\"third\":{\"fourth\":5}}}}""first.second.third.fourth"));
+//		System.out.println(createFile("/home/hari/files/serilizationFile.txt"));
+//		System.out.println(serielzationOfData("/home/hari/files/serilizationFile.txt"));
+		System.out.println(deserilizationOfData("/home/hari/files/serilizationFile.txt"));
 	}
 
 	public static String createDirectory(String path) {
@@ -181,24 +191,57 @@ public class FileOperations {
 		return "Action Performed";
 	}
 
+	public static String serielzationOfData(String path) throws IOException {
+		Serilization serilization = new Serilization("Hari", 4627);
+		ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(path));
+		outputStream.writeObject(serilization);
+		outputStream.close();
+		return path;
+	}
+
+	public static String deserilizationOfData(String path)
+			throws FileNotFoundException, IOException, ClassNotFoundException {
+		ObjectInputStream objectIn = new ObjectInputStream(new FileInputStream(path));
+		Serilization serilized = (Serilization) objectIn.readObject();
+		objectIn.close();
+		return serilized.name + " " + serilized.id;
+	}
+
 	public static String generateLisence(String client, int from, int to, String path) throws IOException {
-		String clientName = "";
-		String fileName = "";
-		String replacedValue = "";
-		if(path.isEmpty()) {
-			String tmpdir = System.getProperty("java.io.tmpdir");
-			path=tmpdir;
+		if (path.isEmpty()) {
+			path = System.getProperty("java. io. tmpdir");
 		}
-		String readerFile = readingFileData(FILE_PATH);
+		String data = readingFileData(FILE_PATH);
 		for (int i = from; i <= to; i++) {
-			clientName = client + String.format("%02d", i);
-			fileName = path + clientName + EXTENSION;
-			File file = new File(fileName);
-			file.createNewFile();
-			replacedValue = readerFile.replace(REPLACE_VALUE, clientName);
+			String clientName = client + String.format("%02d", i);
+			String fileName = path + clientName + EXTENSION;
+			createFile(fileName);
+			String replacedValue = data.replace(REPLACED_VALUE, clientName);
 			writeDataToFile(fileName, replacedValue);
 		}
 		return path;
+	}
+
+	public static String getValueOfNestedJson(String jsonString, String key) {
+		try {
+			JSONObject jsonObject = new JSONObject(jsonString);
+			String[] keys = key.split("\\.");
+			for (String nestedKey : keys) {
+				if (jsonObject.has(nestedKey)) {
+					Object value = jsonObject.get(nestedKey);
+					if (value instanceof JSONObject) {
+						jsonObject = (JSONObject) value;
+					} else {
+						return value.toString();
+					}
+				} else {
+					return null;
+				}
+			}
+			return null;
+		} catch (JSONException e) {
+			return e.getMessage();
+		}
 	}
 
 }
